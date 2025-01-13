@@ -40,7 +40,7 @@ func Unpack(str string) (string, error) {
 				for i := 0; i < iterationCount; i++ {
 					_, err := unpackedStr.WriteString(lastSymbol)
 					if err != nil {
-						return "", fmt.Errorf("%w: %s", ErrUnpackString, err)
+						return "", fmt.Errorf("%w: %w", ErrUnpackString, err)
 					}
 				}
 				lastSymbol = ""
@@ -53,7 +53,7 @@ func Unpack(str string) (string, error) {
 		default:
 			_, err := unpackedStr.WriteString(lastSymbol)
 			if err != nil {
-				return "", fmt.Errorf("%w: %s", ErrUnpackString, err)
+				return "", fmt.Errorf("%w: %w", ErrUnpackString, err)
 			}
 
 			lastSymbol = symbol
