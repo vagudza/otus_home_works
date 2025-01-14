@@ -16,7 +16,6 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
-          - github.com/rivo/uniseg
       Test:
         files:
           - $test

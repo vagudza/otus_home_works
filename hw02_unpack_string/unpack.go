@@ -2,69 +2,50 @@ package hw02unpackstring
 
 import (
 	"errors"
-	"fmt"
 	"strings"
-	"unicode"
-
-	"github.com/rivo/uniseg"
 )
 
-var (
-	ErrInvalidString = errors.New("invalid string")
-	ErrUnpackString  = errors.New("unpack string error")
-)
+var ErrInvalidString = errors.New("invalid string")
 
 func Unpack(str string) (string, error) {
 	var unpackedStr strings.Builder
-	var lastSymbol string
+	var lastRune rune
 	var isEscapeSymbol bool
 
-	gr := uniseg.NewGraphemes(str)
-	for gr.Next() {
-		symbol := gr.Str()
-
+	for _, symbol := range str {
 		switch {
 		case isEscapeSymbol:
 			isEscapeSymbol = false
-			lastSymbol = symbol
+			lastRune = symbol
 
-		case isDigit(gr.Runes()):
+		case symbol <= '9' && symbol >= '0':
 			{
-				if lastSymbol == "" {
+				if lastRune == 0 {
 					return "", ErrInvalidString
 				}
-
 				// because each symbol has a code in the ASCI/UTF-8 table, to convert from a numeric rune to an int
 				// it is enough to subtract the code of the rune '0' from the code of this rune
-				iterationCount := int(gr.Runes()[0] - '0')
+				iterationCount := int(symbol - '0')
 				for i := 0; i < iterationCount; i++ {
-					_, err := unpackedStr.WriteString(lastSymbol)
-					if err != nil {
-						return "", fmt.Errorf("%w: %w", ErrUnpackString, err)
-					}
+					unpackedStr.WriteRune(lastRune)
 				}
-				lastSymbol = ""
+				lastRune = 0
 			}
 
-		case symbol == "\\":
+		case symbol == '\\':
 			isEscapeSymbol = true
 			fallthrough
 
 		default:
-			_, err := unpackedStr.WriteString(lastSymbol)
-			if err != nil {
-				return "", fmt.Errorf("%w: %w", ErrUnpackString, err)
+			if lastRune != 0 {
+				unpackedStr.WriteRune(lastRune)
 			}
-
-			lastSymbol = symbol
+			lastRune = symbol
 		}
 	}
 
-	unpackedStr.WriteString(lastSymbol)
+	if lastRune != 0 {
+		unpackedStr.WriteRune(lastRune)
+	}
 	return unpackedStr.String(), nil
-}
-
-func isDigit(in []rune) bool {
-	// digits in Unicode table are in range 48-57; we need to check only first rune
-	return unicode.IsDigit(in[0])
 }
