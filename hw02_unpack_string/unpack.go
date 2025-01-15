@@ -15,10 +15,16 @@ func Unpack(str string) (string, error) {
 	for _, symbol := range str {
 		switch {
 		case isEscapeSymbol:
-			isEscapeSymbol = false
-			lastRune = symbol
+			{
+				if !isDigit(symbol) && symbol != '\\' {
+					return "", ErrInvalidString
+				}
 
-		case symbol <= '9' && symbol >= '0':
+				isEscapeSymbol = false
+				lastRune = symbol
+			}
+
+		case isDigit(symbol):
 			{
 				if lastRune == 0 {
 					return "", ErrInvalidString
@@ -48,4 +54,8 @@ func Unpack(str string) (string, error) {
 		unpackedStr.WriteRune(lastRune)
 	}
 	return unpackedStr.String(), nil
+}
+
+func isDigit(r rune) bool {
+	return r >= '0' && r <= '9'
 }
