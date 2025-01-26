@@ -79,4 +79,51 @@ func TestTop10(t *testing.T) {
 			require.Equal(t, expected, Top10(text))
 		}
 	})
+
+	t.Run("basic scenario", func(t *testing.T) {
+		input := "cat and dog, one dog, two cats and one man"
+		expected := []string{
+			"and",  // 2
+			"dog",  // 2
+			"one",  // 2
+			"cat",  // 1
+			"cats", // 1
+			"man",  // 1
+			"two",  // 1
+		}
+		require.Equal(t, expected, Top10(input))
+	})
+
+	t.Run("equal frequency text", func(t *testing.T) {
+		input := "cherry cherry, apple banana apple banana"
+		expected := []string{"apple", "banana", "cherry"}
+		require.Equal(t, expected, Top10(input))
+	})
+
+	t.Run("equal frequency text with limit top 10", func(t *testing.T) {
+		input := "a b c d e f g h i j k l m n o"
+		expected := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
+		require.Equal(t, expected, Top10(input))
+	})
+
+	t.Run("different punctuation marks (for task with asterisk)", func(t *testing.T) {
+		input := "hello, world! hello- world, hello."
+		expected := []string{
+			"hello", // 3
+			"world", // 2
+		}
+		require.Equal(t, expected, Top10(input))
+	})
+
+	t.Run("text with different case (for task with asterisk)", func(t *testing.T) {
+		input := "Hello HELLO hello"
+		expected := []string{"hello"}
+		require.Equal(t, expected, Top10(input))
+	})
+
+	t.Run("examples from task (for task with asterisk)", func(t *testing.T) {
+		input := "Нога! нога, НОГА нога, Какой-то какойто"
+		expected := []string{"нога", "какой-то", "какойто"}
+		require.Equal(t, expected, Top10(input))
+	})
 }
