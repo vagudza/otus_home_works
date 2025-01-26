@@ -126,4 +126,10 @@ func TestTop10(t *testing.T) {
 		expected := []string{"нога", "какой-то", "какойто"}
 		require.Equal(t, expected, Top10(input))
 	})
+
+	t.Run("----- is word (for task with asterisk)", func(t *testing.T) {
+		input := "- -- --- ---- -----"
+		expected := []string{"-", "--", "---"}
+		require.Equal(t, expected, Top10(input))
+	})
 }

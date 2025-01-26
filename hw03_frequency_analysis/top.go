@@ -53,7 +53,8 @@ func splitToWords(in string) []string {
 
 	i := 0
 	for i < len(words) {
-		words[i] = strings.ToLower(strings.Trim(words[i], ".,;:!?-()'\""))
+		words[i] = strings.ToLower(cutPunctuationMarks(words[i]))
+		// skip empty words
 		if words[i] == "" {
 			words = append(words[:i], words[i+1:]...)
 			continue
@@ -63,4 +64,26 @@ func splitToWords(in string) []string {
 	}
 
 	return words
+}
+
+func cutPunctuationMarks(in string) string {
+	punctuationChars := ".,;:!?-()'\""
+
+	isPunctuation := func() func(r rune) bool {
+		firstRune := true
+
+		return func(r rune) bool {
+			if !firstRune {
+				return false
+			}
+
+			firstRune = false
+			return strings.ContainsRune(punctuationChars, r)
+		}
+	}
+
+	leftTrimmed := strings.TrimLeftFunc(in, isPunctuation())
+	rightTrimmed := strings.TrimRightFunc(leftTrimmed, isPunctuation())
+
+	return rightTrimmed
 }
