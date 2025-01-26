@@ -10,20 +10,21 @@
 9) [«Валидатор структур»](./hw09_struct_validator)
 10) [«Оптимизация программы»](./hw10_program_optimization)
 11) [«Клиент TELNET»](./hw11_telnet_client)
-12) [«Заготовка сервиса Календарь»](./hw12_13_14_15_calendar/docs/12_README.md)
-13) [«API к Календарю»](./hw12_13_14_15_calendar/docs/13_README.md)
-14) [«Кроликизация Календаря»](./hw12_13_14_15_calendar/docs/14_README.md)
-15) [«Докеризация и интеграционное тестирование Календаря»](./hw12_13_14_15_calendar/docs/15_README.md)
-16) [«Проект»](https://github.com/OtusGolang/final_project)
+12) [«Заготовка сервиса Календарь»](hw12_13_14_15_16_calendar/docs/12_README.md)
+13) [«API к Календарю»](hw12_13_14_15_16_calendar/docs/13_README.md)
+14) [«Кроликизация Календаря»](hw12_13_14_15_16_calendar/docs/14_README.md)
+15) [«Докеризация и интеграционное тестирование Календаря»](hw12_13_14_15_16_calendar/docs/15_README.md)
+16) [«Развертывание в Kubernetes»](hw12_13_14_15_16_calendar/docs/16_README.md)
+17) [«Проект»](https://github.com/OtusGolang/final_project)
 
 ---
 [Инструкция по сдаче ДЗ](https://github.com/OtusGolang/home_work/wiki#%D0%A1%D1%82%D1%83%D0%B4%D0%B5%D0%BD%D1%82%D0%B0%D0%BC).
 
 ---
-Используемая версия [golangci-lint](https://golangci-lint.run/usage/install/#other-ci): <b>v1.57.2</b>
+Используемая версия [golangci-lint](https://golangci-lint.run/welcome/install/#other-ci): <b>v1.62.2</b>
 ```
 $ golangci-lint version
-golangci-lint has version 1.57.2 built with go1.22.1 from 77a8601a on 2024-03-28T19:01:11Z
+golangci-lint has version 1.62.2 built with go1.23.3 from 89476e7a on 2024-11-25T14:16:01Z
 ```
 
 ---
