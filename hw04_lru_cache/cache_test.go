@@ -49,7 +49,7 @@ func TestCache(t *testing.T) {
 		require.Nil(t, val)
 	})
 
-	t.Run("purge logic", func(t *testing.T) {
+	t.Run("purge logic", func(_ *testing.T) {
 		// Write me
 	})
 }

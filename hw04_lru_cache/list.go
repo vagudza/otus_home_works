@@ -105,3 +105,23 @@ func (l *list) Remove(i *ListItem) {
 	i.Prev = nil
 	i.Next = nil
 }
+
+func (l *list) MoveToFront(i *ListItem) {
+	if i == l.front {
+		return
+	}
+
+	if i == l.back {
+		l.back = i.Prev
+	}
+
+	i.Prev.Next = i.Next
+	if i.Next != nil {
+		i.Next.Prev = i.Prev
+	}
+
+	i.Prev = nil
+	i.Next = l.front
+	l.front.Prev = i
+	l.front = i
+}
