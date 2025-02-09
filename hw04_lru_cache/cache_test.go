@@ -49,14 +49,61 @@ func TestCache(t *testing.T) {
 		require.Nil(t, val)
 	})
 
-	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+	t.Run("elem push out from capacity logic", func(_ *testing.T) {
+		c := NewCache(2)
+
+		wasInCache := c.Set("a", 1) // ["a":1]
+		require.False(t, wasInCache)
+
+		wasInCache = c.Set("b", 2) // ["b":2, "a":1]
+		require.False(t, wasInCache)
+
+		wasInCache = c.Set("c", 3) // ["c":3, "b":2]
+		require.False(t, wasInCache)
+
+		_, ok := c.Get("a") // "a" was removed cause of capacity
+		require.False(t, ok)
+
+		_, ok = c.Get("b")
+		require.True(t, ok)
+
+		_, ok = c.Get("c")
+		require.True(t, ok)
+
+		c.Clear()
+	})
+
+	t.Run("cache save only updated elems", func(_ *testing.T) {
+		c := NewCache(3)
+
+		wasInCache := c.Set("a", 1) // ["a":1]
+		require.False(t, wasInCache)
+
+		wasInCache = c.Set("b", 2) // ["b":2, "a":1]
+		require.False(t, wasInCache)
+
+		wasInCache = c.Set("c", 3) // ["c":3, "b":2, "a":1]
+		require.False(t, wasInCache)
+
+		value, ok := c.Get("a") // ["a":1, "c":3, "b":2]
+		require.True(t, ok)
+		require.Equal(t, 1, value)
+
+		wasInCache = c.Set("d", 4) // ["d":4, "a":1, "c":3]
+		require.False(t, wasInCache)
+
+		_, ok = c.Get("b") // b was removed cause of capacity
+		require.False(t, ok)
+
+		value, ok = c.Get("c")
+		require.True(t, ok)
+		require.Equal(t, 3, value)
+
+		c.Clear()
 	})
 }
 
-func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
-
+func TestCacheMultithreading(_ *testing.T) {
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
