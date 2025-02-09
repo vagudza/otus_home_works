@@ -48,4 +48,41 @@ func TestList(t *testing.T) {
 		}
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
+
+	t.Run("operations with empty list", func(t *testing.T) {
+		l := NewList()
+
+		l.Remove(nil)
+		require.Equal(t, 0, l.Len())
+
+		l.MoveToFront(nil)
+		// move to front nil *ListItem - skip it
+		l.MoveToFront(l.Back())
+		require.Equal(t, 0, l.Len())
+
+		elem := l.PushBack(nil)
+		require.Nil(t, elem)
+		// PushBack( interface{ type *ListElem ; value = nil } ) - valid element
+		elem = l.PushBack(l.Front())
+		require.Equal(t, elem, l.Front())
+		require.Equal(t, 1, l.Len())
+
+		elem = l.PushFront(nil)
+		require.Nil(t, elem)
+		// PushFront( interface{ type *ListElem ; value = nil } ) - valid element
+		elem = l.PushFront(l.Back())
+		require.Equal(t, 2, l.Len())
+		require.NotNil(t, elem)
+	})
+
+	t.Run("remove last elem", func(t *testing.T) {
+		l := NewList()
+
+		l.PushFront(10) // [10]
+		l.Remove(l.Back())
+
+		l.PushFront(20) // [20]
+		l.Remove(l.Front())
+		require.Equal(t, 0, l.Len())
+	})
 }

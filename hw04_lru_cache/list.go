@@ -17,7 +17,6 @@ type ListItem struct {
 }
 
 type list struct {
-	List  // Remove me after realization.
 	front *ListItem
 	back  *ListItem
 	len   int
@@ -44,6 +43,11 @@ func (l *list) PushFront(v interface{}) *ListItem {
 		l.len++
 	}()
 
+	if v == nil {
+		l.len-- // compensate for defer
+		return nil
+	}
+
 	newItem := &ListItem{
 		Value: v,
 	}
@@ -66,6 +70,11 @@ func (l *list) PushBack(v interface{}) *ListItem {
 	defer func() {
 		l.len++
 	}()
+
+	if v == nil {
+		l.len-- // compensate for defer
+		return nil
+	}
 
 	newItem := &ListItem{
 		Value: v,
@@ -90,6 +99,11 @@ func (l *list) Remove(i *ListItem) {
 		l.len--
 	}()
 
+	if i == nil {
+		l.len++ // compensate for the defer
+		return
+	}
+
 	if i.Prev == nil {
 		l.front = i.Next
 	} else {
@@ -107,7 +121,7 @@ func (l *list) Remove(i *ListItem) {
 }
 
 func (l *list) MoveToFront(i *ListItem) {
-	if i == l.front {
+	if i == nil || i == l.front {
 		return
 	}
 
