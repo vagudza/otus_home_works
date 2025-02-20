@@ -34,9 +34,7 @@ func Run(tasks []Task, n, m int) error {
 
 	for range workersCount {
 		go func() {
-			defer func() {
-				wg.Done()
-			}()
+			defer wg.Done()
 
 			for task := range taskChan {
 				err := task()
@@ -55,9 +53,7 @@ func Run(tasks []Task, n, m int) error {
 	}
 
 	go func() {
-		defer func() {
-			close(taskChan)
-		}()
+		defer close(taskChan)
 
 		for _, task := range tasks {
 			select {
