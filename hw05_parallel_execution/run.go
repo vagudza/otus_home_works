@@ -52,17 +52,15 @@ func Run(tasks []Task, n, m int) error {
 		}()
 	}
 
-	go func() {
-		defer close(taskChan)
-
-		for _, task := range tasks {
-			select {
-			case taskChan <- task:
-			case <-doneChan:
-				return
-			}
+outer:
+	for _, task := range tasks {
+		select {
+		case taskChan <- task:
+		case <-doneChan:
+			break outer
 		}
-	}()
+	}
+	close(taskChan)
 
 	wg.Wait()
 	close(doneChan)
