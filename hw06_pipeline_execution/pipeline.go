@@ -34,7 +34,6 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 				inputChan <- inputData
 			}
 		}
-
 	}()
 
 	// set into first stage inputChan, that can be closed (cancellation with done channel)
@@ -52,6 +51,7 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 			// to close all stages (goroutines) we need to drain transferChan (release data,
 			// because outputChan already closed). The transferChan will be closed last in
 			// pipeline and release current goroutine
+			//nolint:revive
 			for range transferChan {
 			}
 		}()
