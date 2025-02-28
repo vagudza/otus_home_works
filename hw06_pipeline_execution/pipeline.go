@@ -38,6 +38,7 @@ func handleStage(in In, done In, stage Stage) Out {
 			case <-done:
 				go func() {
 					// drainage input channel to release resources
+					//nolint:revive
 					for range stageOut {
 					}
 				}()
@@ -51,6 +52,7 @@ func handleStage(in In, done In, stage Stage) Out {
 				case <-done:
 					go func() {
 						// drainage input channel to release resources
+						//nolint:revive
 						for range stageOut {
 						}
 					}()
