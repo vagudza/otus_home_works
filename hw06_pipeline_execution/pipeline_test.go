@@ -222,10 +222,11 @@ func TestAllStageStop(t *testing.T) {
 		g("Stringifier", func(v interface{}) interface{} { return strconv.Itoa(v.(int)) }),
 	}
 
-	t.Run("done case", func(t *testing.T) {
+	t.Run("done case + check producer blocking", func(t *testing.T) {
 		in := make(Bi)
 		done := make(Bi)
 		data := []int{1, 2, 3, 4, 5}
+		wgProducer := &sync.WaitGroup{}
 
 		// Abort after 200ms
 		abortDur := sleepPerStage * 2
@@ -234,7 +235,10 @@ func TestAllStageStop(t *testing.T) {
 			close(done)
 		}()
 
+		wgProducer.Add(1)
 		go func() {
+			defer wgProducer.Done()
+
 			for _, v := range data {
 				in <- v
 			}
@@ -245,6 +249,8 @@ func TestAllStageStop(t *testing.T) {
 		for s := range ExecutePipeline(in, done, stages...) {
 			result = append(result, s.(string))
 		}
+
+		wgProducer.Wait()
 		wg.Wait()
 
 		require.Len(t, result, 0)

@@ -9,66 +9,56 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	inputChan := make(Bi)
-	outputChan := make(Bi)
-
 	if in == nil || len(stages) == 0 || len(stages) == 1 && stages[0] == nil {
+		outputChan := make(Bi)
 		close(outputChan)
 		return outputChan
 	}
 
-	// producer: transfer data from read-only input channel to channel,
-	// which can be closed in case of cancellation with done channel and
-	// stop the pipeline
-	go func() {
-		defer close(inputChan) // can help stop all pipeline
-
-		for {
-			select {
-			case <-done:
-				return
-			case inputData, ok := <-in:
-				if !ok {
-					return // in case of closed in channel (all data was read)
-				}
-				inputChan <- inputData
-			}
+	current := in
+	for _, stage := range stages {
+		if stage == nil {
+			continue
 		}
-	}()
-
-	// set into first stage inputChan, that can be closed (cancellation with done channel)
-	firstStage := stages[0]
-	transferChan := firstStage(inputChan)
-	for _, stage := range stages[1:] {
-		transferChan = stage(transferChan)
+		current = handleStage(current, done, stage)
 	}
 
-	// consumer: transfer data from last stage of pipeline (transferChan) to output channel
+	return current
+}
+
+func handleStage(in In, done In, stage Stage) Out {
+	outChan := make(Bi)
+
 	go func() {
-		defer func() {
-			close(outputChan) // fast closing output channel in case of cancellation
+		defer close(outChan)
 
-			// to close all stages (goroutines) we need to drain transferChan (release data,
-			// because outputChan already closed). The transferChan will be closed last in
-			// pipeline and release current goroutine
-			//nolint:revive
-			for range transferChan {
-			}
-		}()
-
+		stageOut := stage(in)
 		for {
 			select {
 			case <-done:
+				go func() {
+					// drainage input channel to release resources
+					for range stageOut {
+					}
+				}()
 				return
-			case result, ok := <-transferChan:
+			case val, ok := <-stageOut:
 				if !ok {
 					return
 				}
-
-				outputChan <- result
+				select {
+				case outChan <- val: // data successfully sent to output channel
+				case <-done:
+					go func() {
+						// drainage input channel to release resources
+						for range stageOut {
+						}
+					}()
+					return
+				}
 			}
 		}
 	}()
 
-	return outputChan
+	return outChan
 }
