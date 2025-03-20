@@ -1,6 +1,7 @@
 package hw06pipelineexecution
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"testing"
@@ -233,6 +234,7 @@ func TestAllStageStop(t *testing.T) {
 		go func() {
 			<-time.After(abortDur)
 			close(done)
+			fmt.Println("done in test!")
 		}()
 
 		wgProducer.Add(1)
@@ -242,6 +244,7 @@ func TestAllStageStop(t *testing.T) {
 			for _, v := range data {
 				in <- v
 			}
+			fmt.Println("CLOSE")
 			close(in)
 		}()
 
@@ -250,7 +253,9 @@ func TestAllStageStop(t *testing.T) {
 			result = append(result, s.(string))
 		}
 
+		fmt.Println("WAIT 1")
 		wgProducer.Wait()
+		fmt.Println("WAIT 2")
 		wg.Wait()
 
 		require.Len(t, result, 0)

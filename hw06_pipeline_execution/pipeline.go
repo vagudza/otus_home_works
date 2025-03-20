@@ -15,52 +15,48 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		return outputChan
 	}
 
-	current := in
+	currentChan := in
 	for _, stage := range stages {
 		if stage == nil {
 			continue
 		}
-		current = handleStage(current, done, stage)
+		currentChan = stage(chanWrapper(currentChan, done))
 	}
 
-	return current
+	return currentChan
 }
 
-func handleStage(in In, done In, stage Stage) Out {
-	outChan := make(Bi)
+// chanWrapper transfer data from input chan to out chan, that will be closed when get done signal.
+// When done signal will be received, the func drain data from input channel to avoid block producer.
+func chanWrapper(in In, done In) Out {
+	out := make(Bi)
 
 	go func() {
-		defer close(outChan)
+		defer func() {
+			close(out)
 
-		stageOut := stage(in)
+			// drainage input channel to release resources
+			//nolint:revive
+			for range in {
+			}
+		}()
+
 		for {
 			select {
 			case <-done:
-				go func() {
-					// drainage input channel to release resources
-					//nolint:revive
-					for range stageOut {
-					}
-				}()
 				return
-			case val, ok := <-stageOut:
+			case val, ok := <-in:
 				if !ok {
 					return
 				}
 				select {
-				case outChan <- val: // data successfully sent to output channel
+				case out <- val:
 				case <-done:
-					go func() {
-						// drainage input channel to release resources
-						//nolint:revive
-						for range stageOut {
-						}
-					}()
 					return
 				}
 			}
 		}
 	}()
 
-	return outChan
+	return out
 }
