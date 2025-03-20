@@ -23,7 +23,7 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		currentChan = stage(chanWrapper(currentChan, done))
 	}
 
-	return currentChan
+	return chanWrapper(currentChan, done)
 }
 
 // chanWrapper transfer data from input chan to out chan, that will be closed when get done signal.
