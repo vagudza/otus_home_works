@@ -12,11 +12,11 @@ func TestCopy(t *testing.T) {
 	testDir := t.TempDir()
 	inputPath := filepath.Join(testDir, "input.txt")
 
-	err := os.WriteFile(inputPath, []byte("123456"), 0644)
+	err := os.WriteFile(inputPath, []byte("123456"), 0o644)
 	require.NoError(t, err)
 
 	dirPath := filepath.Join(testDir, "testdir")
-	err = os.Mkdir(dirPath, 0755)
+	err = os.Mkdir(dirPath, 0o755)
 	require.NoError(t, err)
 
 	t.Run("invalid parameters", func(t *testing.T) {
