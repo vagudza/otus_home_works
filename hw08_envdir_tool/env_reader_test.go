@@ -28,13 +28,13 @@ func TestReadDir(t *testing.T) {
 			path := filepath.Join(tmpDir, tc.name)
 
 			if tc.isDir {
-				err := os.Mkdir(path, 0755)
+				err := os.Mkdir(path, 0o755)
 				require.NoError(t, err)
 				continue
-			} else {
-				err := os.WriteFile(path, []byte(tc.content), 0o644)
-				require.NoError(t, err)
 			}
+
+			err := os.WriteFile(path, []byte(tc.content), 0o644)
+			require.NoError(t, err)
 		}
 
 		env, err := ReadDir(tmpDir)
