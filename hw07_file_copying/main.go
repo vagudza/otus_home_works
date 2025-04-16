@@ -19,9 +19,6 @@ func init() {
 
 func main() {
 	flag.Parse()
-
-	from = "testdata/input.txt"
-	to = "out.txt"
 	err := Copy(from, to, offset, limit)
 	if err != nil {
 		log.Fatalf("copy: %s", err.Error())
