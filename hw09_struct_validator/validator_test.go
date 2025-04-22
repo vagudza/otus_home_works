@@ -49,13 +49,29 @@ type (
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
 	}
+
+	// struct with unsupported type for testing program errors
+	InvalidType struct {
+		Value map[string]interface{} `validate:"min:10"`
+	}
+
+	// struct with invalid validation rule
+	InvalidRule struct {
+		Name string `validate:"unknown:value"`
+	}
+
+	// struct with invalid field type for nested validation
+	InvalidNested struct {
+		List []string `validate:"nested"`
+	}
 )
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		name        string
-		in          interface{}
-		expectedErr error
+		name         string
+		in           interface{}
+		expectedErr  error
+		isProgramErr bool
 	}{
 		{
 			name: "success validation",
@@ -68,7 +84,8 @@ func TestValidate(t *testing.T) {
 				Phones: []string{"12345678901", "12345678901"},
 				meta:   json.RawMessage("{}"),
 			},
-			expectedErr: nil,
+			expectedErr:  nil,
+			isProgramErr: false,
 		},
 		{
 			name: "validation with errors",
@@ -90,11 +107,13 @@ func TestValidate(t *testing.T) {
 				{Field: "Phones[0]", Err: ErrStringLength},
 				{Field: "Phones[1]", Err: ErrStringLength},
 			},
+			isProgramErr: false,
 		},
 		{
-			name:        "validate struct with no tags",
-			in:          Token{},
-			expectedErr: nil,
+			name:         "validate struct with no tags",
+			in:           Token{},
+			expectedErr:  nil,
+			isProgramErr: false,
 		},
 		{
 			name: "validate in for int",
@@ -102,6 +121,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: ValidationErrors{
 				{Field: "Code", Err: ErrNumberNotInSet},
 			},
+			isProgramErr: false,
 		},
 		{
 			name: "validate nested struct",
@@ -122,11 +142,31 @@ func TestValidate(t *testing.T) {
 				{Field: "BusinessConfig.Code", Err: ErrStringRegexp},
 				{Field: "BusinessConfig.Product", Err: ErrStringNotInSet},
 			},
+			isProgramErr: false,
 		},
 		{
-			name:        "not a struct",
-			in:          "not a struct",
-			expectedErr: ErrNotStruct,
+			name:         "not a struct",
+			in:           "not a struct",
+			expectedErr:  ErrNotStruct,
+			isProgramErr: true,
+		},
+		{
+			name:         "unsupported field type",
+			in:           InvalidType{Value: map[string]interface{}{"key": "value"}},
+			expectedErr:  ErrInvalidType,
+			isProgramErr: true,
+		},
+		{
+			name:         "invalid validation rule",
+			in:           InvalidRule{Name: "test"},
+			expectedErr:  ErrValidateRule,
+			isProgramErr: true,
+		},
+		{
+			name:         "invalid nested type",
+			in:           InvalidNested{List: []string{"test"}},
+			expectedErr:  ErrInvalidNestedType,
+			isProgramErr: true,
 		},
 	}
 
@@ -140,6 +180,15 @@ func TestValidate(t *testing.T) {
 				return
 			}
 
+			require.Error(t, err)
+
+			if tt.isProgramErr {
+				require.True(t, errors.Is(err, tt.expectedErr),
+					"expected error containing %v, got %v", tt.expectedErr, err)
+				return
+			}
+
+			// for non-program errors, check if the error is of type ValidationErrors
 			var resultErrors ValidationErrors
 			require.True(t, errors.As(err, &resultErrors))
 

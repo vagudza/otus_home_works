@@ -32,30 +32,30 @@ func (v ValidationErrors) Error() string {
 }
 
 var (
+	// program errors (returned as is)
+
 	ErrNotStruct         = errors.New("input is not a struct")
 	ErrValidateRule      = errors.New("invalid validation rule")
 	ErrRegexpCompile     = errors.New("failed to compile regexp")
 	ErrInvalidType       = errors.New("unsupported type for validation")
-	ErrStringLength      = errors.New("string length mismatch")
-	ErrStringMinLength   = errors.New("string length is less than min length")
-	ErrStringMaxLength   = errors.New("string length is greater than max length")
-	ErrStringRegexp      = errors.New("string does not match regexp")
-	ErrStringNotInSet    = errors.New("string is not in allowed set")
-	ErrNumberMin         = errors.New("number is less than min")
-	ErrNumberMax         = errors.New("number is greater than max")
-	ErrNumberNotInSet    = errors.New("number is not in allowed set")
 	ErrInvalidNestedType = errors.New("invalid nested type")
+
+	// validation errors (will be returned as ValidationErrors)
+
+	ErrStringLength    = errors.New("string length mismatch")
+	ErrStringMinLength = errors.New("string length is less than min length")
+	ErrStringMaxLength = errors.New("string length is greater than max length")
+	ErrStringRegexp    = errors.New("string does not match regexp")
+	ErrStringNotInSet  = errors.New("string is not in allowed set")
+	ErrNumberMin       = errors.New("number is less than min")
+	ErrNumberMax       = errors.New("number is greater than max")
+	ErrNumberNotInSet  = errors.New("number is not in allowed set")
 )
 
 func Validate(v interface{}) error {
 	val := reflect.ValueOf(v)
 	if val.Kind() != reflect.Struct {
-		return ValidationErrors{
-			ValidationError{
-				Field: "", // no field name for top-level error
-				Err:   ErrNotStruct,
-			},
-		}
+		return ErrNotStruct
 	}
 
 	var valErrors ValidationErrors
@@ -74,12 +74,19 @@ func Validate(v interface{}) error {
 		}
 
 		if validateTag == "nested" {
-			valErrors = append(valErrors, handleNestedField(field, fieldType)...)
+			nestedErrs, err := handleNestedField(field, fieldType)
+			if err != nil {
+				return err
+			}
+			valErrors = append(valErrors, nestedErrs...)
 			continue
 		}
 
 		rules := strings.Split(validateTag, "|")
-		fieldErrs := validateField(field, fieldType.Name, rules)
+		fieldErrs, err := validateField(field, fieldType.Name, rules)
+		if err != nil {
+			return err
+		}
 		valErrors = append(valErrors, fieldErrs...)
 	}
 
@@ -93,59 +100,58 @@ func Validate(v interface{}) error {
 func handleNestedField(
 	field reflect.Value,
 	fieldType reflect.StructField,
-) ValidationErrors {
+) (ValidationErrors, error) {
 	var valErrors ValidationErrors
 
-	if field.Kind() == reflect.Struct {
-		if err := Validate(field.Interface()); err != nil {
-			var nestedValErrors ValidationErrors
-			if errors.As(err, &nestedValErrors) {
-				for _, e := range nestedValErrors {
-					valErrors = append(valErrors, ValidationError{
-						Field: fieldType.Name + "." + e.Field,
-						Err:   e.Err,
-					})
-				}
-			}
-		}
-	} else {
-		valErrors = append(valErrors, ValidationError{
-			Field: fieldType.Name,
-			Err:   ErrInvalidNestedType,
-		})
+	if field.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("%w: field %s", ErrInvalidNestedType, fieldType.Name)
 	}
 
-	return valErrors
+	if err := Validate(field.Interface()); err != nil {
+		var nestedValErrors ValidationErrors
+		if errors.As(err, &nestedValErrors) {
+			for _, nve := range nestedValErrors {
+				valErrors = append(valErrors, ValidationError{
+					Field: fieldType.Name + "." + nve.Field,
+					Err:   nve.Err,
+				})
+			}
+		} else {
+			return nil, fmt.Errorf("nested validation error: %w", err)
+		}
+	}
+
+	return valErrors, nil
 }
 
-func validateField(field reflect.Value, fieldName string, rules []string) ValidationErrors {
+func validateField(field reflect.Value, fieldName string, rules []string) (ValidationErrors, error) {
 	var valErrors ValidationErrors
 
 	if field.Kind() == reflect.Slice {
 		for i := 0; i < field.Len(); i++ {
-			elemErrs := validateValue(field.Index(i), fieldName, rules)
-			for _, err := range elemErrs {
-				err.Field = fmt.Sprintf("%s[%d]", err.Field, i)
-				valErrors = append(valErrors, err)
+			elemErrs, err := validateValue(field.Index(i), fieldName, rules)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, valErr := range elemErrs {
+				valErr.Field = fmt.Sprintf("%s[%d]", valErr.Field, i)
+				valErrors = append(valErrors, valErr)
 			}
 		}
-		return valErrors
+		return valErrors, nil
 	}
 
 	return validateValue(field, fieldName, rules)
 }
 
-func validateValue(value reflect.Value, fieldName string, rules []string) ValidationErrors {
+func validateValue(value reflect.Value, fieldName string, rules []string) (ValidationErrors, error) {
 	var valErrors ValidationErrors
 
 	for _, rule := range rules {
 		parts := strings.SplitN(rule, ":", 2)
 		if len(parts) != 2 {
-			valErrors = append(valErrors, ValidationError{
-				Field: fieldName,
-				Err:   ErrValidateRule,
-			})
-			continue
+			return nil, fmt.Errorf("%w: field %s, rule: %s", ErrValidateRule, fieldName, rule)
 		}
 
 		ruleName := parts[0]
@@ -156,22 +162,25 @@ func validateValue(value reflect.Value, fieldName string, rules []string) Valida
 		case reflect.String:
 			err := validateString(value.String(), ruleName, ruleParam)
 			if err != nil {
+				if errors.Is(err, ErrValidateRule) || errors.Is(err, ErrRegexpCompile) {
+					return nil, fmt.Errorf("%w: field %s", err, fieldName)
+				}
 				valErrors = append(valErrors, ValidationError{Field: fieldName, Err: err})
 			}
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			err := validateInt(value.Int(), ruleName, ruleParam)
 			if err != nil {
+				if errors.Is(err, ErrValidateRule) {
+					return nil, fmt.Errorf("%w: field %s", err, fieldName)
+				}
 				valErrors = append(valErrors, ValidationError{Field: fieldName, Err: err})
 			}
 		default:
-			valErrors = append(valErrors, ValidationError{
-				Field: fieldName,
-				Err:   ErrInvalidType,
-			})
+			return nil, fmt.Errorf("%w: field %s", ErrInvalidType, fieldName)
 		}
 	}
 
-	return valErrors
+	return valErrors, nil
 }
 
 func validateString(value string, ruleName string, ruleParam string) error {
