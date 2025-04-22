@@ -32,7 +32,7 @@ func (v ValidationErrors) Error() string {
 }
 
 var (
-	// program errors (returned as is)
+	// program errors (returned as is).
 
 	ErrNotStruct         = errors.New("input is not a struct")
 	ErrValidateRule      = errors.New("invalid validation rule")
@@ -40,7 +40,7 @@ var (
 	ErrInvalidType       = errors.New("unsupported type for validation")
 	ErrInvalidNestedType = errors.New("invalid nested type")
 
-	// validation errors (will be returned as ValidationErrors)
+	// validation errors (will be returned as ValidationErrors).
 
 	ErrStringLength    = errors.New("string length mismatch")
 	ErrStringMinLength = errors.New("string length is less than min length")

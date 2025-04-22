@@ -50,17 +50,17 @@ type (
 		Body string `json:"omitempty"`
 	}
 
-	// struct with unsupported type for testing program errors
+	// struct with unsupported type for testing program errors.
 	InvalidType struct {
 		Value map[string]interface{} `validate:"min:10"`
 	}
 
-	// struct with invalid validation rule
+	// struct with invalid validation rule.
 	InvalidRule struct {
 		Name string `validate:"unknown:value"`
 	}
 
-	// struct with invalid field type for nested validation
+	// struct with invalid field type for nested validation.
 	InvalidNested struct {
 		List []string `validate:"nested"`
 	}
